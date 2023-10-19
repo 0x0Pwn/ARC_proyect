@@ -1,6 +1,6 @@
 package proyectoarc;
 
-import java.io.DataOutputStream;
+import java.io.DataOutputStream; //prueba
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
