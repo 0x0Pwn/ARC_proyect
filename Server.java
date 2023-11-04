@@ -12,18 +12,24 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class Server {
-	public static void main(String[] args) {
+public class Server 
+{
+	public static void main(String[] args) 
+	{
 		int nclientes, nvecinos, nciclos;
+		// Contador para los clientes conectados actualmente
 		int clientesActuales = 0;
+		// Para gestionar la fila/columna actual en una matriz de Sockets
 		int filas = 0;
-		ArrayList<ClientHandler> lmanejadores = new ArrayList<>();
 		int columnas = 0;
+		// Para almacenar los Sockets
+		ArrayList<ClientHandler> lmanejadores = new ArrayList<>();
+		
 		Recurso r;
 		try {
+			// Creamos un ServerSocket que escuche el puerto 10571 con un backlog max = 1s y se enlaza a la direccion
 			ServerSocket serverSocket = new ServerSocket(10571, 1000, InetAddress.getByName("127.0.0.1"));
-                        
-
+            // Se crea un Scanner para leer la entrada del usuario
 			Scanner entrada = new Scanner(System.in);
 
 			System.out.println("Numero de clientes en la simulacion (n) ");
@@ -32,7 +38,7 @@ public class Server {
 			System.out.println("Numero de vecinos (Divisor de n) ");
 			nvecinos = entrada.nextInt();
 
-			// En caso de que no sea divisible perfecto
+			// Bucle para asegurarse de que el numero de vecinos es un divisor del num de clientes
 			while (nclientes % nvecinos != 0) {
 				System.out.println("Numero de vecinos (Divisor de n) ");
 				nvecinos = entrada.nextInt();
@@ -40,25 +46,32 @@ public class Server {
 
 			System.out.println("Numero de ciclos ");
 			nciclos = entrada.nextInt();
-
+			// Declaramos una matriz de Sockets para manejar las conexiones
 			Socket[][] matriz = new Socket[nclientes / nvecinos][nvecinos];
 
+			// Bucle para que los clientes se conecten
 			while (clientesActuales < nclientes) {
-                            System.out.println("Clientes actuales:" + clientesActuales);
+                System.out.println("Clientes actuales:" + clientesActuales);
+				// Aceptamos una conexion del cliente
 				Socket clientSocket = serverSocket.accept();
+				// Imprime el puerto del cliente conectado
 				System.out.println("Cliente conectado desde " + clientSocket.getInetAddress().getHostAddress() + " "
 						+ clientSocket.getPort());
+				//Creamos un DataOutputStream para enviar datos al cliente
 				DataOutputStream dataOutputStream = new DataOutputStream(clientSocket.getOutputStream());
-
+				// Se almacena el socket del cliente en la matriz
 				matriz[filas][columnas] = clientSocket;
-
+				// Actualizamos la cuenta de columnas
 				++columnas;
 
+				// Si se alcanza el num de vecinos
 				if (columnas == nvecinos) {
+					// Se reinicia el contador de columnas
 					columnas = 0;
+					// Se incrementa la fila para empezar a llenar la siguiente fila
 					++filas;
 				}
-
+				// Envia datos a los clientes sobre el num actual de clientes, num ciclos y el num vecinos-1
 				dataOutputStream.writeUTF("" + clientesActuales + "," + nciclos + "," + (nvecinos - 1) * nciclos);
 				clientesActuales++;
 
@@ -81,7 +94,7 @@ public class Server {
 				Thread.sleep(100);
 			}
                         
-                        for (int i = 0; i < (nclientes / nvecinos); i++) {
+			for (int i = 0; i < (nclientes / nvecinos); i++) {
 				for (int j = 0; j < nvecinos; j++) {
                                     DataOutputStream dos = new DataOutputStream(matriz[i][j].getOutputStream());
                                     dos.writeUTF("FIN");
@@ -93,7 +106,9 @@ public class Server {
                         String valorEnDecimal = String.format("%.10f", r.ObtenerTiempoMedio(nclientes));
                         System.out.println("Tiempo medio de los clientes: "+ valorEnDecimal + "s");
                 
-		} catch (IOException | InterruptedException e) {
+		} 
+		catch (IOException | InterruptedException e) 
+		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -124,35 +139,47 @@ class ClientHandler extends Thread {
 	}
 
 	@Override
-	public void run() {
-            try{
-		try {
-			DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
-			DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
-			String respuesta = "";
+	public void run() 
+	{
+		try
+		{
+			try 
+			{
+				// Creamos un flujo de entrada para leer datos del socket del cliente
+				DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
+				// Creamos un flujo de salida para enviar datos al socket del clente
+				DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
+				// Respuesta del cliente
+				String respuesta = "";
 
-			dos.writeUTF("COMIENZO");
+				// Enviamos un mensaje al cliente para indicar que la comunicacion ha comenzado
+				dos.writeUTF("COMIENZO");
 
-			while (rcompartido.GetClientes() > 0 && !(clientSocket.isClosed())) {
-				if (dis.available() != 0) {
-					respuesta = dis.readUTF();
-					System.out.println(respuesta);
-                                        if(respuesta.equals("ACABO") && rcompartido.GetClientes()>=0)
-                                        {
-                                            rcompartido.accederVariable();
-                                        }
-                                        else 
-                                        {Reenviar(matr, buscarSocketEnMatriz(clientSocket, matr), clientSocket, respuesta);}
+				// Mientras que haya clientes activos y el socket del cliente no este cerrado
+				while (rcompartido.GetClientes() > 0 && !(clientSocket.isClosed())) 
+				{
+					// Comprobamos si hay datos disponibles para leer del cliente
+					if (dis.available() != 0) {
+						// Lee los datos enviados por el cliente
+						respuesta = dis.readUTF();
+						System.out.println(respuesta);
+							// Comprobamos si el mensaje del cliente es "ACABO" y hya aun clientes activos
+							if(respuesta.equals("ACABO") && rcompartido.GetClientes()>=0)
+								rcompartido.accederVariable(); // Accede a una variable en el recurso compartido para actualizarse
+							else
+								Reenviar(matr, buscarSocketEnMatriz(clientSocket, matr), clientSocket, respuesta);
+					}
+							
 				}
-                        
-			}
-                } catch (SocketException w)
-                {
-                                rcompartido.accederVariable();
-                }      
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			} 
+			catch (SocketException w)
+			{
+				rcompartido.accederVariable();
+			}      
+		} 
+		catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
 		}
 
 	}
