@@ -7,7 +7,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Random;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.logging.Logger; //fgdfhgfgh
 
 class Persona extends Thread {
 	protected Socket sk;
