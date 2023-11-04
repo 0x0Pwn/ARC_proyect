@@ -1,10 +1,11 @@
-package proyectoarc;
+package Redes3;
 
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Recurso {
     private int clientesRestantes;
-    private long tiempo;
+    private long tiempo ;
+
     public Recurso(int clientes) {
         clientesRestantes = clientes;
         tiempo = 0;
@@ -13,17 +14,22 @@ public class Recurso {
     public synchronized void accederVariable() {
         // En este punto, solo un hilo puede acceder a la variable compartida a la vez,
         // gracias al synchronized, un bloqueo basicamente
-        System.out.println("Hilo " + Thread.currentThread().getId() + " esta¡ accediendo a la variable compartida.");
+       
         // Realiza operaciones en la variable compartida y nos indica que el cliente ha
         // entrado y se ha consumido
-        clientesRestantes--;
+        
+            clientesRestantes--;
+            System.err.println("Quedan: "+clientesRestantes);
+            System.out.println(clientesRestantes);
+     
     }
 
-    public int GetClientes() {
+    public synchronized int GetClientes() {
         return clientesRestantes;
     }
     
-    public synchronized void Suma_Tiempo (long t){
+ 
+     public synchronized void Suma_Tiempo (long t){
         tiempo += t;
     }
     
