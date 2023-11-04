@@ -17,8 +17,8 @@ class Persona extends Thread {
 	protected Socket sk;
 	protected DataOutputStream dos;
 	protected DataInputStream dis;
-        Recurso r = new Recurso(200);;
-        private int id;
+	Recurso r = new Recurso(200);;
+	private int id;
 	private int ciclos;
 	private int mensajes;
 
@@ -30,73 +30,76 @@ class Persona extends Thread {
 
 	@Override
 	public void run() {
-          try{
-            try {
-                int mensajesPorCiclo = 0;
-                String hostname = "127.0.0.1";
-                InetAddress addr = InetAddress.getByName(hostname);
-                InetSocketAddress inet = new InetSocketAddress(addr, 10571);
-                sk = new Socket();
-                sk.connect(inet, 1000);
-                sk.setSoTimeout(5000);
-                dos = new DataOutputStream(sk.getOutputStream());
-                dis = new DataInputStream(sk.getInputStream());
-                FasePrimera(dos, dis);
-                
-                FaseDos(dos,dis);
-                
-                
-                while((ciclos != 0 || mensajes >0) && !sk.isClosed())
-                {
-                    mensajesPorCiclo = mensajes / ciclos;
-                    dos.writeUTF(generarCoordenadasAleatorias());
-                    
-                    while(mensajesPorCiclo >0)
-                    {
-                        System.out.println("cliente: "+ id);
-                        if(r.GetClientes()>=0)
-                        {
-                            dis.readUTF();
-                            mensajesPorCiclo--;
-                            mensajes--;
-                           }
-                        
-                        
-                    }
-                    System.out.println("Cliente "+id+" a recibir "+mensajes);
-                    ciclos--;
-                }
-                
-                
-                System.out.println("Cliente "+id+" acabando");
-                dos.writeUTF("ACABO");
-                while((!dis.readUTF().equals("FIN")) && !sk.isClosed())
-                {
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }
-                System.out.println("HOLAAAAAAAA");
-                
-                dis.close();
-                dos.close();
-                sk.close();
-                
-            }catch (SocketTimeoutException e)
+		try
+		{
+            try 
+			{
+				int mensajesPorCiclo = 0;
+				String hostname = "127.0.0.1";
+				InetAddress addr = InetAddress.getByName(hostname);
+				InetSocketAddress inet = new InetSocketAddress(addr, 10571);
+				sk = new Socket();
+				sk.connect(inet, 1000);
+				sk.setSoTimeout(5000);
+				dos = new DataOutputStream(sk.getOutputStream());
+				dis = new DataInputStream(sk.getInputStream());
+				FasePrimera(dos, dis);
+				
+				FaseDos(dos,dis);
+				
+				
+				while((ciclos != 0 || mensajes >0) && !sk.isClosed())
+				{
+					mensajesPorCiclo = mensajes / ciclos;
+					dos.writeUTF(generarCoordenadasAleatorias());
+					
+					while(mensajesPorCiclo >0)
+					{
+						System.out.println("cliente: "+ id);
+						if(r.GetClientes()>=0)
+						{
+							dis.readUTF();
+							mensajesPorCiclo--;
+							mensajes--;
+							}
+						
+						
+					}
+					System.out.println("Cliente "+id+" a recibir "+mensajes);
+					ciclos--;
+				}
+				
+				
+				System.out.println("Cliente "+id+" acabando");
+				dos.writeUTF("ACABO");
+				while((!dis.readUTF().equals("FIN")) && !sk.isClosed())
+				{
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				System.out.println("HOLAAAAAAAA");
+				
+				dis.close();
+				dos.close();
+				sk.close();
+				
+			}
+			catch (SocketTimeoutException e)
             {
                 dis.close();
                 dos.close();
                 sk.close();
             }
             
-            } catch (Exception e) {
-                e.printStackTrace();
-                
-            }     
-           
+        } 
+		catch (Exception e)
+		{
+			e.printStackTrace();  
+		}   
 	}
 
 	public void FasePrimera(DataOutputStream dos, DataInputStream dis) {

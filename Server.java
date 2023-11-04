@@ -26,7 +26,8 @@ public class Server
 		ArrayList<ClientHandler> lmanejadores = new ArrayList<>();
 		
 		Recurso r;
-		try {
+		try 
+		{
 			// Creamos un ServerSocket que escuche el puerto 10571 con un backlog max = 1s y se enlaza a la direccion
 			ServerSocket serverSocket = new ServerSocket(10571, 1000, InetAddress.getByName("127.0.0.1"));
             // Se crea un Scanner para leer la entrada del usuario
@@ -78,10 +79,13 @@ public class Server
 			}
 
 			System.out.println("Cargando................");
+			// Recurso con el numero actual de clientes
 			r = new Recurso(clientesActuales);
+			// El hilo se pone en pausa durante 5'
 			Thread.sleep(2000);
 			for (int i = 0; i < (nclientes / nvecinos); i++) {
 				for (int j = 0; j < nvecinos; j++) {
+					// Se crea un ClientHandler pasandole un sockete del cliente con todos los datos
 					ClientHandler manejador = new ClientHandler(matriz[i][j], nciclos, r, matriz);
                                        
 					manejador.start();
@@ -89,8 +93,9 @@ public class Server
 
 				}
 			}
-
+			// El bucle se ejecuta mientras haya clientes que estan siendo atendidos
 			while (r.GetClientes() > 0) {
+				// El hilo se pone a dormir durante 1'
 				Thread.sleep(100);
 			}
                         
@@ -107,6 +112,8 @@ public class Server
                         System.out.println("Tiempo medio de los clientes: "+ valorEnDecimal + "s");
                 
 		} 
+		// IOException se lanza por los errores en la entrada/salida de red
+		// InterruptedException se lanza si cualquier hilo fue interrumpido mientras estaba dormido
 		catch (IOException | InterruptedException e) 
 		{
 			// TODO Auto-generated catch block
@@ -183,11 +190,12 @@ class ClientHandler extends Thread {
 		}
 
 	}
-
+	// Buscamos un Socket espeficido
 	public int buscarSocketEnMatriz(Socket socket, Socket[][] matriz) {
 		for (int i = 0; i < matriz.length; i++) {
 			for (int j = 0; j < matriz[i].length; j++) {
 				Socket s = matriz[i][j];
+				// Comprobamos si el socket no esta cerrado y es igual al socket que estamos buscado
 				if (s != null && !s.isClosed() && s.equals(socket)) {
 					return i;
 				}
@@ -195,16 +203,18 @@ class ClientHandler extends Thread {
 		}
 		return 0;
 	}
-
+	// Distribuir mensajes a traves de una red de clientes.
+	// Para reenviar un mensaje a todos los sockets de una fila especifica en la matriz, menos el socket que origino el mensaje
 	public void Reenviar(Socket[][] matriz, int fila, Socket s, String mensaje) {
 		for (int i = 0; i < matriz[fila].length; i++) {
-			if (matriz[fila][i] != s) { // Esto es para ver que no te reenvias a ti mismo
-                        
+			// Comprobamos si el socket actual no es el socket de origen
+			if (matriz[fila][i] != s) { // Esto es para ver que no te reenvias a ti mismo         
 				try {
-
+					// Antes de enviar, comprobamos si el socke no esta cerrado
 					if (!matriz[fila][i].isClosed()) {// Compruebo si no esta cerrado el socket
-
+						// Obtenemos el flujo de salida del socket actual y lo metemos en un DataOutputStream
 						DataOutputStream dataOutputStream = new DataOutputStream(matriz[fila][i].getOutputStream());
+						// Escribe el mensaje al flujo de salida del socket
 						dataOutputStream.writeUTF(mensaje);
 					}
                                 
