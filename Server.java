@@ -12,20 +12,25 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class Server 
+public class Server extends Thread
 {
-	public static void main(String[] args) 
+	int nclientes, nvecinos, nciclos;
+	// Contador para los clientes conectados actualmente
+	int clientesActuales = 0;
+	// Para gestionar la fila/columna actual en una matriz de Sockets
+	int filas = 0;
+	int columnas = 0;
+	// Para almacenar los Sockets
+	ArrayList<ClientHandler> lmanejadores = new ArrayList<>();
+	// Recurso con el numero actual de clientes
+	Recurso r;
+
+	public Servidor(Recurso rec){
+		r = rec;
+	}
+
+	public void run()
 	{
-		int nclientes, nvecinos, nciclos;
-		// Contador para los clientes conectados actualmente
-		int clientesActuales = 0;
-		// Para gestionar la fila/columna actual en una matriz de Sockets
-		int filas = 0;
-		int columnas = 0;
-		// Para almacenar los Sockets
-		ArrayList<ClientHandler> lmanejadores = new ArrayList<>();
-		
-		Recurso r;
 		try 
 		{
 			// Creamos un ServerSocket que escuche el puerto 10571 con un backlog max = 1s y se enlaza a la direccion
@@ -35,6 +40,7 @@ public class Server
 
 			System.out.println("Numero de clientes en la simulacion (n) ");
 			nclientes = entrada.nextInt();
+			r.clientestot(nclientes);
 
 			System.out.println("Numero de vecinos (Divisor de n) ");
 			nvecinos = entrada.nextInt();
@@ -50,9 +56,11 @@ public class Server
 			// Declaramos una matriz de Sockets para manejar las conexiones
 			Socket[][] matriz = new Socket[nclientes / nvecinos][nvecinos];
 
+			r.cont(true);
+            System.out.println(" Servidor activo.... ");
+			
 			// Bucle para que los clientes se conecten
 			while (clientesActuales < nclientes) {
-                System.out.println("Clientes actuales:" + clientesActuales);
 				// Aceptamos una conexion del cliente
 				Socket clientSocket = serverSocket.accept();
 				// Imprime el puerto del cliente conectado
@@ -79,10 +87,9 @@ public class Server
 			}
 
 			System.out.println("Cargando................");
-			// Recurso con el numero actual de clientes
-			r = new Recurso(clientesActuales);
 			// El hilo se pone en pausa durante 5'
 			Thread.sleep(2000);
+			
 			for (int i = 0; i < (nclientes / nvecinos); i++) {
 				for (int j = 0; j < nvecinos; j++) {
 					// Se crea un ClientHandler pasandole un sockete del cliente con todos los datos
@@ -98,29 +105,29 @@ public class Server
 				// El hilo se pone a dormir durante 1'
 				Thread.sleep(100);
 			}
-                        
-			for (int i = 0; i < (nclientes / nvecinos); i++) {
-				for (int j = 0; j < nvecinos; j++) {
-                                    DataOutputStream dos = new DataOutputStream(matriz[i][j].getOutputStream());
-                                    dos.writeUTF("FIN");
-				}
-			}
+            r.Acabar(true);
+
+            while( r.retacabado()!= nclientes)
+            {
+                Thread.sleep(2000);
+            }           
+	
                        
 			//serverSocket.close();
-                        System.out.println("Todos los clientes han terminado su trabajo.");
-                        String valorEnDecimal = String.format("%.10f", r.ObtenerTiempoMedio(nclientes));
-                        System.out.println("Tiempo medio de los clientes: "+ valorEnDecimal + "s");
+			System.out.println("Todos los clientes han terminado su trabajo.");
                 
 		} 
 		// IOException se lanza por los errores en la entrada/salida de red
 		// InterruptedException se lanza si cualquier hilo fue interrumpido mientras estaba dormido
-		catch (IOException | InterruptedException e) 
+		catch (IOException e) 
 		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		System.out.println("Servidor en línea. Esperando conexiones...");
-	}
+		catch (InterruptedException ex)
+		{
+			Logger.getLogger(Servidor.class.getName()).log(Level.SEVERE, null, ex);
+		}
 
 }
 
@@ -174,7 +181,7 @@ class ClientHandler extends Thread {
 							if(respuesta.equals("ACABO") && rcompartido.GetClientes()>=0)
 								rcompartido.accederVariable(); // Accede a una variable en el recurso compartido para actualizarse
 							else
-								Reenviar(matr, buscarSocketEnMatriz(clientSocket, matr), clientSocket, respuesta);
+								rcompartido.Reenviar(matr, buscarSocketEnMatriz(clientSocket, matr), clientSocket, respuesta);
 					}
 							
 				}
@@ -202,28 +209,5 @@ class ClientHandler extends Thread {
 			}
 		}
 		return 0;
-	}
-	// Distribuir mensajes a traves de una red de clientes.
-	// Para reenviar un mensaje a todos los sockets de una fila especifica en la matriz, menos el socket que origino el mensaje
-	public void Reenviar(Socket[][] matriz, int fila, Socket s, String mensaje) {
-		for (int i = 0; i < matriz[fila].length; i++) {
-			// Comprobamos si el socket actual no es el socket de origen
-			if (matriz[fila][i] != s) { // Esto es para ver que no te reenvias a ti mismo         
-				try {
-					// Antes de enviar, comprobamos si el socke no esta cerrado
-					if (!matriz[fila][i].isClosed()) {// Compruebo si no esta cerrado el socket
-						// Obtenemos el flujo de salida del socket actual y lo metemos en un DataOutputStream
-						DataOutputStream dataOutputStream = new DataOutputStream(matriz[fila][i].getOutputStream());
-						// Escribe el mensaje al flujo de salida del socket
-						dataOutputStream.writeUTF(mensaje);
-					}
-                                
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-			}
-		}
 	}
 }
